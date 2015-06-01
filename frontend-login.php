@@ -12,7 +12,9 @@ class Frontend_Login {
 	
 	public function __construct() {
 		add_action("init", array( $this, "check_login" ) );
-		add_action("admin_init", array( $this, "admin_stuff" ) );
+		if ( is_admin() && ! defined('DOING_AJAX') ) {
+			add_action("admin_init", array( $this, "admin_stuff" ) );
+		}
 		add_action("wp_logout", array( $this, "logout" ) );
 		add_action("login_enqueue_scripts", array( $this, "custom_login" ) );
 
@@ -35,7 +37,7 @@ class Frontend_Login {
 										   "meta_value" => $matches[1]
 										 ) );
 
-				if ( empty( $users ) ) {
+				if ( empty( $users ) ) {					
 					return;
 				}
 
@@ -45,7 +47,7 @@ class Frontend_Login {
 				$timestamp = get_user_meta( $user->ID, "_frontend_login_timestamp", true );
 
 				// if the timestamp is not too old, log the user in
-				if ( isset( $timestamp ) && ( time() - $timestamp < 300 ) ) {
+				if ( isset( $timestamp ) && ( time() - $timestamp < 300 ) ) {					
 					wp_set_current_user( $user->ID, $user->user_login );
 			        wp_set_auth_cookie( $user->ID );
 			        do_action( 'wp_login', $user->user_login );
@@ -72,6 +74,9 @@ class Frontend_Login {
 		}
 		else {
 			$user_id = get_current_user_id();
+
+			delete_user_meta( $user_id, "_frontend_login_token" );
+			delete_user_meta( $user_id, "_frontend_login_timestamp" );
 
 			// register the javascript code we need
 			wp_register_script( "frontend_login", plugin_dir_url( __FILE__ ) . "/js/frontend-login.js", array("jquery"), "0.01" );
@@ -128,6 +133,55 @@ class Frontend_Login {
 			wp_enqueue_script("frontend_login");
 		}
 	}
+
 }
+
+	if ( !function_exists('wp_verify_nonce') ) :
+	function wp_verify_nonce( $nonce, $action = -1 ) {
+	        $nonce = (string) $nonce;
+	        $user = wp_get_current_user();
+	        $uid = (int) $user->ID;
+	        if ( ! $uid ) {
+	                $uid = apply_filters( 'nonce_user_logged_out', $uid, $action );
+	        }
+
+	        if ( empty( $nonce ) ) {
+	                return false;
+	        }
+
+	        $token = md5($_SERVER["HTTP_USER_AGENT"] . "#ß°¶0bÄæ"); // . $_SERVER['REMOTE_ADDR']);
+	        $i = wp_nonce_tick();
+
+	        // Nonce generated 0-12 hours ago
+	        $expected = substr( wp_hash( $i . '|' . $action . '|' . $uid . '|' . $token, 'nonce'), -12, 10 );
+	        if ( hash_equals( $expected, $nonce ) ) {
+	                return 1;
+	        }
+
+	        // Nonce generated 12-24 hours ago
+	        $expected = substr( wp_hash( ( $i - 1 ) . '|' . $action . '|' . $uid . '|' . $token, 'nonce' ), -12, 10 );
+	        if ( hash_equals( $expected, $nonce ) ) {
+	                return 2;
+	        }
+
+	        // Invalid nonce
+	        return false;
+	}
+	endif;
+
+	if ( !function_exists('wp_create_nonce') ) :
+	function wp_create_nonce($action = -1) {
+	        $user = wp_get_current_user();
+	        $uid = (int) $user->ID;
+	        if ( ! $uid ) {                
+	                $uid = apply_filters( 'nonce_user_logged_out', $uid, $action );
+	        }
+
+	        $token = md5($_SERVER["HTTP_USER_AGENT"] . "#ß°¶0bÄæ"); // . $_SERVER['REMOTE_ADDR']);
+	        $i = wp_nonce_tick();
+
+	        return substr( wp_hash( $i . '|' . $action . '|' . $uid . '|' . $token, 'nonce' ), -12, 10 );
+	}
+	endif;
 
 new Frontend_Login();
