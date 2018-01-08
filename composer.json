@@ -1,0 +1,21 @@
+{
+  "name": "devgeniem/wp-frontend-login",
+  "type": "wordpress-plugin",
+  "description": "Frontend Login",
+  "authors": [
+    {
+        "name": "Miika Arponen",
+        "email": "miika.arponen@geniem.com",
+        "homepage": "http://geniem.fi/",
+        "role": "Developer"
+    }
+  ],
+  "keywords": [
+    "wordpress", "cache"
+  ],
+  "license": "GPL-3.0",
+  "minimum-stability": "dev",
+  "extra": {
+    "installer-name": "frontend-login"
+  }
+}
